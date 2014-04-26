@@ -16,7 +16,6 @@ type MailboxInfo struct {
 ```
 
 ##### Then connect and pull all mail...
----
 ```go
 // GetAll will pull all emails from the email folder and return them as a list.
 func GetAll(info MailboxInfo, markAsRead, delete bool) ([]Email, error)
@@ -50,8 +49,7 @@ func GetSince(info MailboxInfo, since time.Time, markAsRead, delete bool)
 func GenerateSince(info MailboxInfo, since time.Time, markAsRead, delete bool, responses chan Response)
 ```
 
-#### `eazye` will pull out the most common headers and bits but also provides the `mail.M
-essage` in case you want to pull additional data.
+#### `eazye` will pull out the most common headers and bits but also provides the `mail.Message` in case you want to pull additional data.
 
 ```go
 type Email struct {
@@ -75,4 +73,4 @@ type Response struct {
 }
 ```
 
-This package has one dependency, `github.com/mxk/go-imap/imap`.
+This package has one dependency you will need to `go get`: `github.com/mxk/go-imap/imap`.
