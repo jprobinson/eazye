@@ -2,7 +2,7 @@ eazye
 ======
 ### _The `Gangsta Gangsta` way to pull email._
 
-Getting your emails is eazy...
+#### Getting your emails is eazy...
 
 ##### Start by putting credentials and mailbox info into a MailboxInfo:
 ```go
@@ -26,7 +26,7 @@ func GetAll(info MailboxInfo, markAsRead, delete bool) ([]Email, error)
 func GenerateAll(info MailboxInfo, markAsRead, delete bool, responses chan Response)
 ```
 
-#### ... or all unread mail...
+##### ... or all unread mail...
 ```go
 // GetUnread will find all unread emails in the folder and return them as a list.
 func GetUnread(info MailboxInfo, markAsRead, delete bool) ([]Email, error)
@@ -38,7 +38,7 @@ func GenerateUnread(info MailboxInfo, markAsRead, delete bool, responses chan Re
 ```
 
 
-#### ... or all mail received since a particular date.
+#####  ... or all mail received since a particular date.
 ```go
 // GetSince will pull all emails that have an internal date after the given time.
 func GetSince(info MailboxInfo, since time.Time, markAsRead, delete bool)
@@ -49,7 +49,7 @@ func GetSince(info MailboxInfo, since time.Time, markAsRead, delete bool)
 func GenerateSince(info MailboxInfo, since time.Time, markAsRead, delete bool, responses chan Response)
 ```
 
-#### `eazye` will pull out the most common headers and bits but also provides the `mail.Message` in case you want to pull additional data.
+##### `eazye` will pull out the most common headers and bits but also provides the `mail.Message` in case you want to pull additional data.
 
 ```go
 type Email struct {
@@ -62,9 +62,9 @@ type Email struct {
     Subject      string    `json:"subject"`
     Body         string    `json:"body"`
 }
+```
 
-
-#### If you have a lot of messages and do not want to load everything into memory, use the GenerateXXX functions and the emails will be passed along on a channel of `eazye.Response`s, which are just a simple wrapper to hold an email and any possible errors that may have occured.
+##### If you have a lot of messages and do not want to load everything into memory, use the GenerateXXX functions and the emails will be passed along on a channel of `eazye.Response`s
 ```go
 // Response is a helper struct to wrap the email responses and possible errors.
 type Response struct {
