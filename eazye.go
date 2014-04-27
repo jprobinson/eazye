@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
-	"log"
 	"net/mail"
 	"strings"
 	"time"
@@ -99,7 +98,7 @@ type Email struct {
 	From         string    `json:"from"`
 	To           []string  `json:"to"`
 	InternalDate time.Time `json:"internal_date"`
-	Precedence   string    `json:"precednce"`
+	Precedence   string    `json:"precedence"`
 	Subject      string    `json:"subject"`
 	Body         string    `json:"body"`
 }
@@ -108,12 +107,12 @@ type Email struct {
 func (e Email) String() string {
 	return fmt.Sprintf(`
 ----------------------------
-From:			%s
-To:				%s
-Internal Date:	%s 
-Precedence:		%s
-Subject:		%s
-Body:			%s
+From:           %s
+To:             %s
+Internal Date:  %s 
+Precedence:     %s
+Subject:        %s
+Body:           %s
 ----------------------------
 
 `,
@@ -174,7 +173,6 @@ func findEmails(client *imap.Client, search string, since *time.Time) (*imap.Com
 		sinceStr := since.Format(dateFormat)
 		specs = append(specs, "SINCE", sinceStr)
 	}
-	log.Printf("specs: %v", specs)
 
 	// get headers and UID for UnSeen message in src inbox...
 	cmd, err := imap.Wait(client.UIDSearch(specs...))
@@ -210,7 +208,6 @@ func getEmails(client *imap.Client, cmd *imap.Command, markAsRead, delete bool, 
 			seq.AddNum(uid)
 		}
 	}
-	log.Printf("found %d emails", msgCount)
 
 	// nothing to request?! why you even callin me, foolio?
 	if seq.Empty() {

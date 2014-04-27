@@ -58,7 +58,7 @@ type Email struct {
     From         string    `json:"from"`
     To           []string  `json:"to"`
     InternalDate time.Time `json:"internal_date"`
-    Precedence   string    `json:"precednce"`
+    Precedence   string    `json:"precedence"`
     Subject      string    `json:"subject"`
     Body         string    `json:"body"`
 }

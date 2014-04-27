@@ -26,6 +26,7 @@ func getUnread(info eazye.MailboxInfo) {
 	emails, err := eazye.GetUnread(info, true, false)
 	if err != nil {
 		log.Print("get unread err: ", resp.Err.Error())
+		continue
 	}
 
 	for _, email := range emails {
@@ -45,6 +46,7 @@ func getSince(info eazye.MailboxInfo) {
 	for resp := range responses {
 		if resp.Err != nil {
 			log.Print("gen since err: ", resp.Err.Error())
+			continue
 		}
 		log.Print(resp.Email)
 	}
@@ -59,7 +61,8 @@ func getAll(info eazye.MailboxInfo) {
 
 	for resp := range responses {
 		if resp.Err != nil {
-			log.Print("get all err: ", resp.Err.Error())
+			log.Print("gen all err: ", resp.Err.Error())
+			continue
 		}
 		log.Print(resp.Email)
 	}
