@@ -60,9 +60,11 @@ type Email struct {
     InternalDate time.Time `json:"internal_date"`
     Precedence   string    `json:"precedence"`
     Subject      string    `json:"subject"`
-    Body         string    `json:"body"`
+    Body         []byte    `json:"body"`
 }
 ```
+
+##### The `eazye` Email type also has a handy `func (e *Email) VisibleText() ([][]byte, error)` that will return all the visible text from an HTML email.
 
 ##### If you have a lot of messages and do not want to load everything into memory, use the GenerateXXX functions and the emails will be passed along on a channel of `eazye.Response`s
 ```go

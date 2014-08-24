@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net/mail"
 	"strings"
 	"time"
 
+	"code.google.com/p/go.net/html"
 	"github.com/mxk/go-imap/imap"
 )
 
@@ -100,11 +102,80 @@ type Email struct {
 	InternalDate time.Time `json:"internal_date"`
 	Precedence   string    `json:"precedence"`
 	Subject      string    `json:"subject"`
-	Body         string    `json:"body"`
+	Body         []byte    `json:"body"`
+}
+
+var (
+	styleTag       = []byte("style")
+	scriptTag      = []byte("script")
+	headTag        = []byte("head")
+	metaTag        = []byte("meta")
+	doctypeTag     = []byte("doctype")
+	shapeTag       = []byte("v:shape")
+	imageDataTag   = []byte("v:imagedata")
+	commentTag     = []byte("!")
+	nonVisibleTags = [][]byte{
+		styleTag,
+		scriptTag,
+		headTag,
+		metaTag,
+		doctypeTag,
+		shapeTag,
+		imageDataTag,
+		commentTag,
+	}
+
+	htmlCommentPrefix = []byte("<!--")
+	htmlIfBlock       = []byte("[if")
+	newLine           = []byte("\n")
+)
+
+// VisibleText will return any visible text from an HTML
+// email body.
+func (e *Email) VisibleText() ([][]byte, error) {
+	z := html.NewTokenizer(bytes.NewReader(e.Body))
+
+	var text [][]byte
+	skip := false
+	for {
+		tt := z.Next()
+		switch tt {
+		case html.ErrorToken:
+			err := z.Err()
+			if err == io.EOF {
+				return text, nil
+			}
+			return text, err
+		case html.TextToken:
+			if !skip {
+				tmp := bytes.TrimSpace(z.Text())
+				tagText := make([]byte, len(tmp))
+				copy(tagText, tmp)
+
+				if len(tagText) == 0 {
+					continue
+				}
+				if bytes.HasPrefix(tagText, htmlCommentPrefix) ||
+					bytes.HasPrefix(tagText, htmlIfBlock) {
+					continue
+				}
+				text = append(text, tagText)
+			}
+		case html.StartTagToken, html.EndTagToken:
+			tn, _ := z.TagName()
+			for _, nvTag := range nonVisibleTags {
+				if bytes.Equal(tn, nvTag) {
+					skip = (tt == html.StartTagToken)
+					break
+				}
+			}
+		}
+	}
+	return text, nil
 }
 
 // String is to spit out a somewhat pretty version of the email.
-func (e Email) String() string {
+func (e *Email) String() string {
 	return fmt.Sprintf(`
 ----------------------------
 From:           %s
@@ -121,7 +192,7 @@ Body:           %s
 		e.InternalDate,
 		e.Precedence,
 		e.Subject,
-		e.Body,
+		string(e.Body),
 	)
 }
 
@@ -288,7 +359,7 @@ func newEmail(msgFields imap.FieldMap) (Email, error) {
 	email = Email{
 		Message:      msg,
 		InternalDate: imap.AsDateTime(msgFields["INTERNALDATE"]),
-		Body:         imap.AsString(msgFields["BODY[]"]),
+		Body:         imap.AsBytes(msgFields["BODY[]"]),
 		Precedence:   msg.Header.Get("Precedence"),
 		From:         msg.Header.Get("From"),
 		To:           strings.Split(msg.Header.Get("To"), ","),
