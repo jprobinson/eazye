@@ -149,14 +149,15 @@ func (e *Email) VisibleText() ([][]byte, error) {
 		case html.TextToken:
 			if !skip {
 				tmp := bytes.TrimSpace(z.Text())
+				if len(tmp) == 0 {
+					continue
+				}
 				tagText := make([]byte, len(tmp))
 				copy(tagText, tmp)
 
-				if len(tagText) == 0 {
-					continue
-				}
 				if bytes.HasPrefix(tagText, htmlCommentPrefix) ||
-					bytes.HasPrefix(tagText, htmlIfBlock) {
+					bytes.HasPrefix(tagText, htmlIfBlock) ||
+					bytes.Equal(tagText, newLine) {
 					continue
 				}
 				text = append(text, tagText)
