@@ -1,13 +1,33 @@
-package eazye_test
+package eazye
 
-import (
-	"testing"
+import "testing"
 
-	"github.com/jprobinson/eazye"
-)
+func TestParseSubject(t *testing.T) {
+	tests := []struct {
+		given string
+		want  string
+	}{
+		{
+			"A plain string subject",
+			"A plain string subject",
+		},
+		{
+			"=?UTF-8?B?SmFwYW7igJlzIEVjb25vbXkgU2hyaW5rcyB0aGUgTW9zdCBTaW5j?= =?UTF-8?B?ZSAyMDExIFF1YWtlIG9uIFNhbGVzIFRheA==?=",
+			"Japan’s Economy Shrinks the Most Since 2011 Quake on Sales Tax",
+		},
+	}
+
+	for _, test := range tests {
+		got := parseSubject(test.given)
+		if got != test.want {
+			t.Errorf("parseSubject(%s) got:%s want:%s", test.given, got, test.want)
+		}
+	}
+
+}
 
 func TestVisibleText(t *testing.T) {
-	email := eazye.Email{
+	email := Email{
 		Body: []byte(`<html>
 <head>
  <title></title>
