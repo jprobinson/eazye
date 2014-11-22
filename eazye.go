@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"code.google.com/p/go.net/html"
 	"github.com/mxk/go-imap/imap"
+	"golang.org/x/net/html"
 )
 
 // MailboxInfo holds onto the credentials and other information
