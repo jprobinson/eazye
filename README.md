@@ -55,16 +55,18 @@ func GenerateSince(info MailboxInfo, since time.Time, markAsRead, delete bool, r
 type Email struct {
     Message *mail.Message
 
-    From         string    `json:"from"`
-    To           []string  `json:"to"`
-    InternalDate time.Time `json:"internal_date"`
-    Precedence   string    `json:"precedence"`
-    Subject      string    `json:"subject"`
-    Body         []byte    `json:"body"`
+    From         *mail.Address   `json:"from"`
+    To           []*mail.Address `json:"to"`
+    InternalDate time.Time       `json:"internal_date"`
+    Precedence   string          `json:"precedence"`
+    Subject      string          `json:"subject"`
+    HTML         []byte          `json:"html"`
+    Text         []byte          `json:"text"`
+    IsMultiPart  bool            `json:"is_multipart"`
 }
 ```
 
-##### The `eazye` Email type also has a handy `func (e *Email) VisibleText() ([][]byte, error)` that will return all the visible text from an HTML email.
+##### The `eazye` Email type also has a handy `func (e *Email) VisibleText() ([][]byte, error)` that will return all the visible text from an HTML email or the body of a Text email if HTML is not available.
 
 ##### If you have a lot of messages and do not want to load everything into memory, use the GenerateXXX functions and the emails will be passed along on a channel of `eazye.Response`s
 ```go
@@ -75,4 +77,9 @@ type Response struct {
 }
 ```
 
-This package has one dependency you will need to `go get`: `github.com/mxk/go-imap/imap`.
+This package has several dependencies: 
+* github.com/mxk/go-imap/imap
+* code.google.com/p/go-charset/charset
+* code.google.com/p/go-charset/data
+* github.com/sloonz/go-qprintable
+* golang.org/x/net/html
