@@ -8,12 +8,17 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"mime"
+	"mime/multipart"
 	"net/mail"
 	"strconv"
 	"strings"
 	"time"
 
+	"code.google.com/p/go-charset/charset"
+	_ "code.google.com/p/go-charset/data"
 	"github.com/mxk/go-imap/imap"
+	"github.com/sloonz/go-qprintable"
 	"golang.org/x/net/html"
 )
 
@@ -101,12 +106,14 @@ func GenerateSince(info MailboxInfo, since time.Time, markAsRead, delete bool, r
 type Email struct {
 	Message *mail.Message
 
-	From         string    `json:"from"`
-	To           []string  `json:"to"`
-	InternalDate time.Time `json:"internal_date"`
-	Precedence   string    `json:"precedence"`
-	Subject      string    `json:"subject"`
-	Body         []byte    `json:"body"`
+	From         *mail.Address   `json:"from"`
+	To           []*mail.Address `json:"to"`
+	InternalDate time.Time       `json:"internal_date"`
+	Precedence   string          `json:"precedence"`
+	Subject      string          `json:"subject"`
+	HTML         []byte          `json:"html"`
+	Text         []byte          `json:"text"`
+	IsMultiPart  bool            `json:"is_multipart"`
 }
 
 var (
@@ -137,7 +144,11 @@ var (
 // VisibleText will return any visible text from an HTML
 // email body.
 func (e *Email) VisibleText() ([][]byte, error) {
-	z := html.NewTokenizer(bytes.NewReader(e.Body))
+	// if theres no HTML, just return text
+	if len(e.HTML) == 0 {
+		return [][]byte{e.Text}, nil
+	}
+	z := html.NewTokenizer(bytes.NewReader(e.HTML))
 
 	var text [][]byte
 	skip := false
@@ -188,7 +199,9 @@ To:             %s
 Internal Date:  %s 
 Precedence:     %s
 Subject:        %s
-Body:           %s
+HTML:           %s
+
+Text:           %s
 ----------------------------
 
 `,
@@ -197,7 +210,8 @@ Body:           %s
 		e.InternalDate,
 		e.Precedence,
 		e.Subject,
-		string(e.Body),
+		string(e.HTML),
+		string(e.Text),
 	)
 }
 
@@ -448,6 +462,8 @@ func parseSubject(subject string) string {
 	return strings.Join(words, "")
 }
 
+var headerSplitter = []byte("\n")
+
 // newEmailMessage will parse an imap.FieldMap into an Email. This
 // will expect the message to container the internaldate and the body with
 // all headers included.
@@ -460,15 +476,119 @@ func newEmail(msgFields imap.FieldMap) (Email, error) {
 		return email, err
 	}
 
+	from, err := mail.ParseAddress(msg.Header.Get("From"))
+	if err != nil {
+		return email, err
+	}
+
+	to, err := mail.ParseAddressList(msg.Header.Get("To"))
+	if err != nil {
+		return email, err
+	}
+
 	email = Email{
 		Message:      msg,
 		InternalDate: imap.AsDateTime(msgFields["INTERNALDATE"]),
-		Body:         imap.AsBytes(msgFields["BODY[]"]),
 		Precedence:   msg.Header.Get("Precedence"),
-		From:         msg.Header.Get("From"),
-		To:           strings.Split(msg.Header.Get("To"), ","),
+		From:         from,
+		To:           to,
 		Subject:      parseSubject(msg.Header.Get("Subject")),
 	}
 
-	return email, nil
+	// chunk the body up into simple chunks
+	rawBody := imap.AsBytes(msgFields["BODY[]"])
+	email.HTML, email.Text, email.IsMultiPart, err = parseBody(msg.Header, rawBody)
+	return email, err
+}
+
+// parseBody will accept a a raw body, break it into all its parts and then convert the
+// message to UTF-8 from whatever charset it may have.
+func parseBody(header mail.Header, body []byte) (html []byte, text []byte, isMultipart bool, err error) {
+	var mediaType string
+	var params map[string]string
+	mediaType, params, err = mime.ParseMediaType(header.Get("Content-Type"))
+	if err != nil {
+		return
+	}
+
+	if strings.HasPrefix(mediaType, "multipart/") {
+		isMultipart = true
+		mr := multipart.NewReader(bytes.NewReader(body), params["boundary"])
+		for {
+			p, err := mr.NextPart()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				break
+			}
+
+			slurp, err := ioutil.ReadAll(p)
+			if err != nil {
+				break
+			}
+
+			partMediaType, partParams, err := mime.ParseMediaType(p.Header.Get("Content-Type"))
+			if err != nil {
+				break
+			}
+
+			var htmlT, textT []byte
+			htmlT, textT, err = parsePart(partMediaType, partParams["charset"], p.Header.Get("Content-Transfer-Encoding"), slurp)
+			if len(htmlT) > 0 {
+				html = htmlT
+			} else {
+				text = textT
+			}
+		}
+	} else {
+
+		splitBody := bytes.SplitN(body, []byte("\r\n\r\n"), 2)
+		if len(splitBody) < 2 {
+			err = errors.New("unexpected email format. (single part and no \\r\\n\\r\\n separating headers/body")
+			return
+		}
+
+		body = splitBody[1]
+		html, text, err = parsePart(mediaType, params["charset"], header.Get("Content-Transfer-Encoding"), body)
+	}
+	return
+}
+
+func parsePart(mediaType, charsetStr, encoding string, part []byte) (html, text []byte, err error) {
+	// deal with charset
+	if strings.ToLower(charsetStr) == "iso-8859-1" {
+		var cr io.Reader
+		cr, err = charset.NewReader("latin1", bytes.NewReader(part))
+		if err != nil {
+			return
+		}
+
+		part, err = ioutil.ReadAll(cr)
+		if err != nil {
+			return
+		}
+	}
+
+	// deal with encoding
+	var body []byte
+	if strings.ToLower(encoding) == "quoted-printable" {
+		dec := qprintable.NewDecoder(qprintable.WindowsTextEncoding, bytes.NewReader(part))
+		body, err = ioutil.ReadAll(dec)
+		if err != nil {
+			return
+		}
+	} else {
+		body = part
+	}
+
+	// deal with media type
+	mediaType = strings.ToLower(mediaType)
+	switch {
+	case strings.Contains(mediaType, "text/html"):
+		html = body
+	case strings.Contains(mediaType, "text/plain"):
+		text = body
+	}
+	return
 }
