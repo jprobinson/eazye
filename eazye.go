@@ -462,8 +462,6 @@ func parseSubject(subject string) string {
 	return strings.Join(words, "")
 }
 
-var headerSplitter = []byte("\n")
-
 // newEmailMessage will parse an imap.FieldMap into an Email. This
 // will expect the message to container the internaldate and the body with
 // all headers included.
@@ -500,6 +498,8 @@ func newEmail(msgFields imap.FieldMap) (Email, error) {
 	email.HTML, email.Text, email.IsMultiPart, err = parseBody(msg.Header, rawBody)
 	return email, err
 }
+
+var headerSplitter = []byte("\r\n\r\n")
 
 // parseBody will accept a a raw body, break it into all its parts and then convert the
 // message to UTF-8 from whatever charset it may have.
@@ -543,7 +543,7 @@ func parseBody(header mail.Header, body []byte) (html []byte, text []byte, isMul
 		}
 	} else {
 
-		splitBody := bytes.SplitN(body, []byte("\r\n\r\n"), 2)
+		splitBody := bytes.SplitN(body, headerSplitter, 2)
 		if len(splitBody) < 2 {
 			err = errors.New("unexpected email format. (single part and no \\r\\n\\r\\n separating headers/body")
 			return
