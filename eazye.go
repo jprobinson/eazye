@@ -17,7 +17,7 @@ import (
 
 	"code.google.com/p/go-charset/charset"
 	_ "code.google.com/p/go-charset/data"
-	"github.com/mxk/go-imap/imap"
+	"github.com/jprobinson/go-imap/imap"
 	"github.com/sloonz/go-qprintable"
 	"golang.org/x/net/html"
 )
@@ -278,11 +278,18 @@ func generateMail(info MailboxInfo, search string, since *time.Time, markAsRead,
 		responses <- Response{Err: err}
 		return
 	}
-	defer client.Close(true)
+	defer func() {
+		client.Close(true)
+		client.Logout(30 * time.Second)
+	}()
 
 	var cmd *imap.Command
 	// find all the UIDs
 	cmd, err = findEmails(client, search, since)
+	if err != nil {
+		responses <- Response{Err: err}
+		return
+	}
 	// gotta fetch 'em all
 	getEmails(client, cmd, markAsRead, delete, responses)
 }
