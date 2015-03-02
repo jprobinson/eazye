@@ -141,14 +141,8 @@ var (
 	newLine           = []byte("\n")
 )
 
-// VisibleText will return any visible text from an HTML
-// email body.
-func (e *Email) VisibleText() ([][]byte, error) {
-	// if theres no HTML, just return text
-	if len(e.HTML) == 0 {
-		return [][]byte{e.Text}, nil
-	}
-	z := html.NewTokenizer(bytes.NewReader(e.HTML))
+func VisibleText(body []byte) ([][]byte, error) {
+	z := html.NewTokenizer(bytes.NewReader(body))
 
 	var text [][]byte
 	skip := false
@@ -188,6 +182,16 @@ func (e *Email) VisibleText() ([][]byte, error) {
 		}
 	}
 	return text, nil
+}
+
+// VisibleText will return any visible text from an HTML
+// email body.
+func (e *Email) VisibleText() ([][]byte, error) {
+	// if theres no HTML, just return text
+	if len(e.HTML) == 0 {
+		return [][]byte{e.Text}, nil
+	}
+	return VisibleText(e.HTML)
 }
 
 // String is to spit out a somewhat pretty version of the email.
