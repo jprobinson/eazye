@@ -326,8 +326,10 @@ func getEmails(client *imap.Client, cmd *imap.Command, markAsRead, delete bool, 
 		msgFields := msgData.MessageInfo().Attrs
 
 		// make sure is a legit response before we attempt to parse it
-		// I noticed (almost) every message had a second message containing ONLY the prev UID and a Seen flag as of 2015-3-3
-		// I'm lookin' at YOU, Gmail! - http://mailman13.u.washington.edu/pipermail/imap-protocol/2014-October/002355.html
+		// deal with unsolicited FETCH responses containing only flags
+		// I'm lookin' at YOU, Gmail!
+		// http://mailman13.u.washington.edu/pipermail/imap-protocol/2014-October/002355.html
+		// http://stackoverflow.com/questions/26262472/gmail-imap-is-sometimes-returning-bad-results-for-fetch
 		if _, ok := msgFields["RFC822.HEADER"]; !ok {
 			continue
 		}
