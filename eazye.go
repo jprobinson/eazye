@@ -271,7 +271,7 @@ func findEmails(client *imap.Client, search string, since *time.Time) (*imap.Com
 	// get headers and UID for UnSeen message in src inbox...
 	cmd, err := imap.Wait(client.UIDSearch(specs...))
 	if err != nil {
-		return &imap.Command{}, err
+		return &imap.Command{}, fmt.Errorf("uid search failed: %s", err)
 	}
 	return cmd, nil
 }
@@ -279,7 +279,7 @@ func findEmails(client *imap.Client, search string, since *time.Time) (*imap.Com
 func generateMail(info MailboxInfo, search string, since *time.Time, markAsRead, delete bool, responses chan Response) {
 	client, err := newIMAPClient(info)
 	if err != nil {
-		responses <- Response{Err: err}
+		responses <- Response{Err: fmt.Errorf("uid search failed: %s", err)}
 		return
 	}
 	defer func() {
@@ -317,16 +317,24 @@ func getEmails(client *imap.Client, cmd *imap.Command, markAsRead, delete bool, 
 
 	fCmd, err := imap.Wait(client.UIDFetch(seq, "INTERNALDATE", "BODY[]", "UID", "RFC822.HEADER"))
 	if err != nil {
-		responses <- Response{Err: err}
+		responses <- Response{Err: fmt.Errorf("unable to perform uid fetch: %s", err)}
 		return
 	}
 
 	var email Email
 	for _, msgData := range fCmd.Data {
 		msgFields := msgData.MessageInfo().Attrs
+
+		// make sure is a legit response before we attempt to parse it
+		// I noticed (almost) every message had a second message containing ONLY the prev UID and a Seen flag as of 2015-3-3
+		// I'm lookin' at YOU, Gmail! - http://mailman13.u.washington.edu/pipermail/imap-protocol/2014-October/002355.html
+		if _, ok := msgFields["RFC822.HEADER"]; !ok {
+			continue
+		}
+
 		email, err = newEmail(msgFields)
 		if err != nil {
-			responses <- Response{Err: err}
+			responses <- Response{Err: fmt.Errorf("unable to parse email: %s", err)}
 			return
 		}
 
@@ -335,7 +343,7 @@ func getEmails(client *imap.Client, cmd *imap.Command, markAsRead, delete bool, 
 		if !markAsRead {
 			err = removeSeen(client, imap.AsNumber(msgFields["UID"]))
 			if err != nil {
-				responses <- Response{Err: err}
+				responses <- Response{Err: fmt.Errorf("unable to remove seen flag: %s", err)}
 				return
 			}
 		}
@@ -343,7 +351,7 @@ func getEmails(client *imap.Client, cmd *imap.Command, markAsRead, delete bool, 
 		if delete {
 			err = deleteEmail(client, imap.AsNumber(msgFields["UID"]))
 			if err != nil {
-				responses <- Response{Err: err}
+				responses <- Response{Err: fmt.Errorf("unable to delete email: %s", err)}
 				return
 			}
 		}
@@ -480,19 +488,20 @@ func newEmail(msgFields imap.FieldMap) (Email, error) {
 	var email Email
 	// parse the header
 	rawHeader := imap.AsBytes(msgFields["RFC822.HEADER"])
+
 	msg, err := mail.ReadMessage(bytes.NewReader(rawHeader))
 	if err != nil {
-		return email, err
+		return email, fmt.Errorf("unable to read header: %s", err)
 	}
 
 	from, err := mail.ParseAddress(msg.Header.Get("From"))
 	if err != nil {
-		return email, err
+		return email, fmt.Errorf("unable to parse from address: %s", err)
 	}
 
 	to, err := mail.ParseAddressList(msg.Header.Get("To"))
 	if err != nil {
-		return email, err
+		return email, fmt.Errorf("unable to parse to address: %s", err)
 	}
 
 	email = Email{
