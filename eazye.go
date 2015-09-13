@@ -36,9 +36,10 @@ type MailboxInfo struct {
 func GetAll(info MailboxInfo, markAsRead, delete bool) ([]Email, error) {
 	// call chan, put 'em in a list, return
 	var emails []Email
-	responses := make(chan Response)
-
-	go GenerateAll(info, markAsRead, delete, responses)
+	responses, err := GenerateAll(info, markAsRead, delete)
+	if err != nil {
+		return emails, err
+	}
 
 	for resp := range responses {
 		if resp.Err != nil {
@@ -51,17 +52,19 @@ func GetAll(info MailboxInfo, markAsRead, delete bool) ([]Email, error) {
 }
 
 // GenerateAll will find all emails in the email folder and pass them along to the responses channel.
-func GenerateAll(info MailboxInfo, markAsRead, delete bool, responses chan Response) {
-	generateMail(info, "ALL", nil, markAsRead, delete, responses)
+func GenerateAll(info MailboxInfo, markAsRead, delete bool) (chan Response, error) {
+	return generateMail(info, "ALL", nil, markAsRead, delete)
 }
 
 // GetUnread will find all unread emails in the folder and return them as a list.
 func GetUnread(info MailboxInfo, markAsRead, delete bool) ([]Email, error) {
 	// call chan, put 'em in a list, return
 	var emails []Email
-	responses := make(chan Response)
 
-	go GenerateUnread(info, markAsRead, delete, responses)
+	responses, err := GenerateUnread(info, markAsRead, delete)
+	if err != nil {
+		return emails, err
+	}
 
 	for resp := range responses {
 		if resp.Err != nil {
@@ -74,16 +77,17 @@ func GetUnread(info MailboxInfo, markAsRead, delete bool) ([]Email, error) {
 }
 
 // GenerateUnread will find all unread emails in the folder and pass them along to the responses channel.
-func GenerateUnread(info MailboxInfo, markAsRead, delete bool, responses chan Response) {
-	generateMail(info, "UNSEEN", nil, markAsRead, delete, responses)
+func GenerateUnread(info MailboxInfo, markAsRead, delete bool) (chan Response, error) {
+	return generateMail(info, "UNSEEN", nil, markAsRead, delete)
 }
 
 // GetSince will pull all emails that have an internal date after the given time.
 func GetSince(info MailboxInfo, since time.Time, markAsRead, delete bool) ([]Email, error) {
 	var emails []Email
-	responses := make(chan Response)
-
-	go GenerateSince(info, since, markAsRead, delete, responses)
+	responses, err := GenerateSince(info, since, markAsRead, delete)
+	if err != nil {
+		return emails, err
+	}
 
 	for resp := range responses {
 		if resp.Err != nil {
@@ -97,8 +101,8 @@ func GetSince(info MailboxInfo, since time.Time, markAsRead, delete bool) ([]Ema
 
 // GenerateSince will find all emails that have an internal date after the given time and pass them along to the
 // responses channel.
-func GenerateSince(info MailboxInfo, since time.Time, markAsRead, delete bool, responses chan Response) {
-	generateMail(info, "", &since, markAsRead, delete, responses)
+func GenerateSince(info MailboxInfo, since time.Time, markAsRead, delete bool) (chan Response, error) {
+	return generateMail(info, "", &since, markAsRead, delete)
 }
 
 // Email is a simplified email struct containing the basic pieces of an email. If you want more info,
@@ -276,31 +280,38 @@ func findEmails(client *imap.Client, search string, since *time.Time) (*imap.Com
 	return cmd, nil
 }
 
-func generateMail(info MailboxInfo, search string, since *time.Time, markAsRead, delete bool, responses chan Response) {
+var GenerateBufferSize = 100
+
+func generateMail(info MailboxInfo, search string, since *time.Time, markAsRead, delete bool) (chan Response, error) {
+	responses := make(chan Response, GenerateBufferSize)
 	client, err := newIMAPClient(info)
 	if err != nil {
-		responses <- Response{Err: fmt.Errorf("uid search failed: %s", err)}
-		return
+		close(responses)
+		return responses, fmt.Errorf("uid search failed: %s", err)
 	}
-	defer func() {
-		client.Close(true)
-		client.Logout(30 * time.Second)
+
+	go func() {
+		defer func() {
+			client.Close(true)
+			client.Logout(30 * time.Second)
+			close(responses)
+		}()
+
+		var cmd *imap.Command
+		// find all the UIDs
+		cmd, err = findEmails(client, search, since)
+		if err != nil {
+			responses <- Response{Err: err}
+			return
+		}
+		// gotta fetch 'em all
+		getEmails(client, cmd, markAsRead, delete, responses)
 	}()
 
-	var cmd *imap.Command
-	// find all the UIDs
-	cmd, err = findEmails(client, search, since)
-	if err != nil {
-		responses <- Response{Err: err}
-		return
-	}
-	// gotta fetch 'em all
-	getEmails(client, cmd, markAsRead, delete, responses)
+	return responses, nil
 }
 
 func getEmails(client *imap.Client, cmd *imap.Command, markAsRead, delete bool, responses chan Response) {
-	defer close(responses)
-
 	seq := &imap.SeqSet{}
 	msgCount := 0
 	for _, rsp := range cmd.Data {

@@ -22,8 +22,8 @@ func GetAll(info MailboxInfo, markAsRead, delete bool) ([]Email, error)
 ```
 
 ```go
-// GenerateAll will find all emails in the email folder and pass them along to the responses channel.
-func GenerateAll(info MailboxInfo, markAsRead, delete bool, responses chan Response)
+// GenerateAll will find all emails in the email folder and pass them along to the response channel.
+func GenerateAll(info MailboxInfo, markAsRead, delete bool) (chan Response, error)
 ```
 
 ##### ... or all unread mail...
@@ -33,8 +33,8 @@ func GetUnread(info MailboxInfo, markAsRead, delete bool) ([]Email, error)
 ```
 
 ```go
-// GenerateUnread will find all unread emails in the folder and pass them along to the responses channel.
-func GenerateUnread(info MailboxInfo, markAsRead, delete bool, responses chan Response)
+// GenerateUnread will find all unread emails in the folder and pass them along to the response channel.
+func GenerateUnread(info MailboxInfo, markAsRead, delete bool) (chan Response, error)
 ```
 
 
@@ -46,7 +46,7 @@ func GetSince(info MailboxInfo, since time.Time, markAsRead, delete bool)
 
 ```go
 // GenerateSince will find all emails that have an internal date after the given time and pass them along to the responses channel.
-func GenerateSince(info MailboxInfo, since time.Time, markAsRead, delete bool, responses chan Response)
+func GenerateSince(info MailboxInfo, since time.Time, markAsRead, delete bool) (chan Response, error)
 ```
 
 ##### `eazye` will pull out the most common headers and bits but also provides the `mail.Message` in case you want to pull additional data.
@@ -68,7 +68,7 @@ type Email struct {
 
 ##### The `eazye` Email type also has a handy `func (e *Email) VisibleText() ([][]byte, error)` that will return all the visible text from an HTML email or the body of a Text email if HTML is not available.
 
-##### If you have a lot of messages and do not want to load everything into memory, use the GenerateXXX functions and the emails will be passed along on a channel of `eazye.Response`s
+##### If you have a lot of messages and do not want to load everything into memory, use the GenerateXXX functions and the emails will be passed along on a channel of `eazye.Response`s. To configure the buffer size of the response channel, you can use the exported `GenerateBufferSize` variable, which is defaulted to 100.
 ```go
 // Response is a helper struct to wrap the email responses and possible errors.
 type Response struct {
@@ -79,7 +79,7 @@ type Response struct {
 
 This package has several dependencies: 
 * github.com/mxk/go-imap/imap
-* code.google.com/p/go-charset/charset
-* code.google.com/p/go-charset/data
+* github.com/paulrosania/charset
+* github.com/paulrosania/go-charset/data
 * github.com/sloonz/go-qprintable
 * golang.org/x/net/html
