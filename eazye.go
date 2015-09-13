@@ -15,9 +15,9 @@ import (
 	"strings"
 	"time"
 
-	"code.google.com/p/go-charset/charset"
-	_ "code.google.com/p/go-charset/data"
-	"github.com/jprobinson/go-imap/imap"
+	"github.com/mxk/go-imap/imap"
+	"github.com/paulrosania/go-charset/charset"
+	_ "github.com/paulrosania/go-charset/data"
 	"github.com/sloonz/go-qprintable"
 	"golang.org/x/net/html"
 )
