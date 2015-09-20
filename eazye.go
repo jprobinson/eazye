@@ -139,10 +139,6 @@ var (
 		imageDataTag,
 		commentTag,
 	}
-
-	htmlCommentPrefix = []byte("<!--")
-	htmlIfBlock       = []byte("[if")
-	newLine           = []byte("\n")
 )
 
 func VisibleText(body []byte) ([][]byte, error) {
@@ -167,12 +163,6 @@ func VisibleText(body []byte) ([][]byte, error) {
 				}
 				tagText := make([]byte, len(tmp))
 				copy(tagText, tmp)
-
-				if bytes.HasPrefix(tagText, htmlCommentPrefix) ||
-					bytes.HasPrefix(tagText, htmlIfBlock) ||
-					bytes.Equal(tagText, newLine) {
-					continue
-				}
 				text = append(text, tagText)
 			}
 		case html.StartTagToken, html.EndTagToken:
