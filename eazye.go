@@ -141,17 +141,18 @@ var (
 	}
 )
 
-func VisibleText(body []byte) ([][]byte, error) {
-	z := html.NewTokenizer(bytes.NewReader(body))
-
-	var text [][]byte
-	skip := false
+func VisibleText(body io.Reader) ([][]byte, error) {
+	var (
+		text [][]byte
+		skip bool
+		err  error
+	)
+	z := html.NewTokenizer(body)
 	for {
 		tt := z.Next()
 		switch tt {
 		case html.ErrorToken:
-			err := z.Err()
-			if err == io.EOF {
+			if err = z.Err(); err == io.EOF {
 				return text, nil
 			}
 			return text, err
@@ -185,7 +186,7 @@ func (e *Email) VisibleText() ([][]byte, error) {
 	if len(e.HTML) == 0 {
 		return [][]byte{e.Text}, nil
 	}
-	return VisibleText(e.HTML)
+	return VisibleText(bytes.NewReader(e.HTML))
 }
 
 // String is to spit out a somewhat pretty version of the email.
