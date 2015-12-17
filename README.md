@@ -1,4 +1,4 @@
-eazye
+eazye [![GoDoc](https://godoc.org/github.com/jprobinson/eazye?status.svg)](https://godoc.org/github.com/jprobinson/eazye) ![Travis CI](https://travis-ci.org/jprobinson/eazye.svg?branch=master)
 ======
 ### _The `Gangsta Gangsta` way to pull email._
 
