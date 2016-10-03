@@ -30,6 +30,8 @@ type MailboxInfo struct {
 	User   string
 	Pwd    string
 	Folder string
+	// Read only mode, false (original logic) if not initialized
+	ReadOnly bool
 }
 
 // GetAll will pull all emails from the email folder and return them as a list.
@@ -195,7 +197,7 @@ func (e *Email) String() string {
 ----------------------------
 From:           %s
 To:             %s
-Internal Date:  %s 
+Internal Date:  %s
 Precedence:     %s
 Subject:        %s
 HTML:           %s
@@ -241,7 +243,7 @@ func newIMAPClient(info MailboxInfo) (*imap.Client, error) {
 		return client, err
 	}
 
-	_, err = imap.Wait(client.Select(info.Folder, false))
+	_, err = imap.Wait(client.Select(info.Folder, info.ReadOnly))
 	if err != nil {
 		return client, err
 	}
