@@ -494,8 +494,13 @@ func newEmail(msgFields imap.FieldMap) (Email, error) {
 	var email Email
 	// parse the header
 	rawHeader := imap.AsBytes(msgFields["RFC822.HEADER"])
+	rawBody := imap.AsBytes(msgFields["BODY[]"])
 
-	msg, err := mail.ReadMessage(bytes.NewReader(rawHeader))
+	message := append(rawHeader, '\n')
+	message = append(message, '\n')
+	message = append(message, rawBody...)
+
+	msg, err := mail.ReadMessage(bytes.NewReader(message))
 	if err != nil {
 		return email, fmt.Errorf("unable to read header: %s", err)
 	}
@@ -520,7 +525,6 @@ func newEmail(msgFields imap.FieldMap) (Email, error) {
 	}
 
 	// chunk the body up into simple chunks
-	rawBody := imap.AsBytes(msgFields["BODY[]"])
 	email.HTML, email.Text, email.IsMultiPart, err = parseBody(msg.Header, rawBody)
 	return email, err
 }
