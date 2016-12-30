@@ -493,14 +493,12 @@ func parseSubject(subject string) string {
 func newEmail(msgFields imap.FieldMap) (Email, error) {
 	var email Email
 	// parse the header
-	rawHeader := imap.AsBytes(msgFields["RFC822.HEADER"])
+	var message bytes.Buffer
+	message.Write(imap.AsBytes(msgFields["RFC822.HEADER"]))
+	message.Write([]byte("\n\n"))
 	rawBody := imap.AsBytes(msgFields["BODY[]"])
-
-	message := append(rawHeader, '\n')
-	message = append(message, '\n')
-	message = append(message, rawBody...)
-
-	msg, err := mail.ReadMessage(bytes.NewReader(message))
+	message.Write(rawBody)
+	msg, err := mail.ReadMessage(&message)
 	if err != nil {
 		return email, fmt.Errorf("unable to read header: %s", err)
 	}
