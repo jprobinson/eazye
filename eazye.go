@@ -18,7 +18,7 @@ import (
 	"github.com/mxk/go-imap/imap"
 	"github.com/paulrosania/go-charset/charset"
 	_ "github.com/paulrosania/go-charset/data"
-	"github.com/sloonz/go-qprintable"
+	qprintable "github.com/sloonz/go-qprintable"
 	"golang.org/x/net/html"
 )
 
@@ -600,13 +600,19 @@ func parsePart(mediaType, charsetStr, encoding string, part []byte) (html, text 
 
 	// deal with encoding
 	var body []byte
-	if strings.ToLower(encoding) == "quoted-printable" {
+	switch strings.ToLower(encoding) {
+	case "quoted-printable":
 		dec := qprintable.NewDecoder(qprintable.WindowsTextEncoding, bytes.NewReader(part))
 		body, err = ioutil.ReadAll(dec)
 		if err != nil {
 			return
 		}
-	} else {
+	case "base64":
+		_, err = base64.StdEncoding.Decode(body, part)
+		if err != nil {
+			return
+		}
+	default:
 		body = part
 	}
 
