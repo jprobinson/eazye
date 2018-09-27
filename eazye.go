@@ -553,7 +553,10 @@ func parseBody(header mail.Header, body []byte) (html []byte, text []byte, isMul
 
 			slurp, err := ioutil.ReadAll(p)
 			if err != nil {
-				break
+				// error and no results to use
+				if len(slurp) == 0 {
+					break
+				}
 			}
 
 			partMediaType, partParams, err := mime.ParseMediaType(p.Header.Get("Content-Type"))
@@ -608,7 +611,7 @@ func parsePart(mediaType, charsetStr, encoding string, part []byte) (html, text 
 			return
 		}
 	case "base64":
-		_, err = base64.StdEncoding.Decode(body, part)
+		_, err = base64.StdEncoding.Decode(part, body)
 		if err != nil {
 			return
 		}
