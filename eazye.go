@@ -484,7 +484,7 @@ func parseSubject(subject string) string {
 		words = append(words, word)
 	}
 
-	return strings.Join(words, "")
+	return strings.Join(words, " ")
 }
 
 // NewEmail will parse an imap.FieldMap into an Email. This
