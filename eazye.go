@@ -338,7 +338,7 @@ func getEmails(client *imap.Client, cmd *imap.Command, markAsRead, delete bool, 
 			continue
 		}
 
-		email, err = newEmail(msgFields)
+		email, err = NewEmail(msgFields)
 		if err != nil {
 			responses <- Response{Err: fmt.Errorf("unable to parse email: %s", err)}
 			return
@@ -487,10 +487,10 @@ func parseSubject(subject string) string {
 	return strings.Join(words, "")
 }
 
-// newEmailMessage will parse an imap.FieldMap into an Email. This
+// NewEmail will parse an imap.FieldMap into an Email. This
 // will expect the message to container the internaldate and the body with
 // all headers included.
-func newEmail(msgFields imap.FieldMap) (Email, error) {
+func NewEmail(msgFields imap.FieldMap) (Email, error) {
 	var email Email
 	// parse the header
 	var message bytes.Buffer
