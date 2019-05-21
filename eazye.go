@@ -529,7 +529,8 @@ func parsePart(mediaType, charsetStr, encoding string, part []byte) (html, text 
 			return
 		}
 	case "base64":
-		_, err = base64.StdEncoding.Decode(part, body)
+		decoder := base64.NewDecoder(base64.StdEncoding, bytes.NewReader(part))
+		body, err = ioutil.ReadAll(decoder)
 		if err != nil {
 			return
 		}
