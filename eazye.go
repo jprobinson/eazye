@@ -428,7 +428,7 @@ func NewEmail(msgFields imap.FieldMap) (Email, error) {
 
 	to, err := mail.ParseAddressList(msg.Header.Get("To"))
 	if err != nil {
-		return email, fmt.Errorf("unable to parse to address: %s", err)
+		to = []*mail.Address{}
 	}
 
 	email = Email{
