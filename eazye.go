@@ -106,6 +106,50 @@ func GenerateSince(info MailboxInfo, since time.Time, markAsRead, delete bool) (
 	return generateMail(info, "", &since, markAsRead, delete)
 }
 
+// MarkAsUnread will set the UNSEEN flag on a supplied slice of UIDs
+func MarkAsUnread(info MailboxInfo, uids []uint32) error {
+
+	client, err := newIMAPClient(info)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		client.Close(true)
+		client.Logout(30 * time.Second)
+	}()
+	for _, u := range uids {
+		fmt.Println("Setting unseen on", u)
+		err := alterEmail(client, u, "\\SEEN", false)
+		if err != nil {
+			return err //return on first failure
+		}
+	}
+	return nil
+
+}
+
+// DeleteEmails will delete emails from the supplied slice of UIDs
+func DeleteEmails(info MailboxInfo, uids []uint32) error {
+
+	client, err := newIMAPClient(info)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		client.Close(true)
+		client.Logout(30 * time.Second)
+	}()
+	for _, u := range uids {
+		fmt.Println("Deleting UID ", u)
+		err := deleteEmail(client, u)
+		if err != nil {
+			return err //return on first failure
+		}
+	}
+	return nil
+
+}
+
 // Email is a simplified email struct containing the basic pieces of an email. If you want more info,
 // it should all be available within the Message attribute.
 type Email struct {
@@ -119,6 +163,7 @@ type Email struct {
 	HTML         []byte          `json:"html"`
 	Text         []byte          `json:"text"`
 	IsMultiPart  bool            `json:"is_multipart"`
+	UID          uint32          `json:"uid"`
 }
 
 var (
@@ -438,6 +483,7 @@ func NewEmail(msgFields imap.FieldMap) (Email, error) {
 		From:         from,
 		To:           to,
 		Subject:      parseSubject(msg.Header.Get("Subject")),
+		UID:          imap.AsNumber(msgFields["UID"]),
 	}
 
 	// chunk the body up into simple chunks
