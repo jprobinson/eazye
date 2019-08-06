@@ -118,7 +118,6 @@ func MarkAsUnread(info MailboxInfo, uids []uint32) error {
 		client.Logout(30 * time.Second)
 	}()
 	for _, u := range uids {
-		fmt.Println("Setting unseen on", u)
 		err := alterEmail(client, u, "\\SEEN", false)
 		if err != nil {
 			return err //return on first failure
@@ -140,7 +139,6 @@ func DeleteEmails(info MailboxInfo, uids []uint32) error {
 		client.Logout(30 * time.Second)
 	}()
 	for _, u := range uids {
-		fmt.Println("Deleting UID ", u)
 		err := deleteEmail(client, u)
 		if err != nil {
 			return err //return on first failure
