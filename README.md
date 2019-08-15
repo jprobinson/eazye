@@ -49,6 +49,15 @@ func GetSince(info MailboxInfo, since time.Time, markAsRead, delete bool)
 func GenerateSince(info MailboxInfo, since time.Time, markAsRead, delete bool) (chan Response, error)
 ```
 
+##### ... or all mail matching an IMAP Command search
+
+```go
+// GetCommand will pull all emails that match the provided IMAP Command.
+// Examples of IMAP Commands include TO/FROM/BCC, some examples are here http://www.marshallsoft.com/ImapSearch.htm
+func GetCommand(info MailboxInfo, IMAPCommand string, markAsRead, delete bool)
+```
+
+
 ##### `eazye` will pull out the most common headers and bits but also provides the `mail.Message` in case you want to pull additional data.
 
 ```go
@@ -77,7 +86,7 @@ type Response struct {
 }
 ```
 
-This package has several dependencies: 
+This package has several dependencies:
 * github.com/mxk/go-imap/imap
 * github.com/paulrosania/charset
 * github.com/paulrosania/go-charset/data

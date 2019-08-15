@@ -57,12 +57,27 @@ func GenerateAll(info MailboxInfo, markAsRead, delete bool) (chan Response, erro
 	return generateMail(info, "ALL", nil, markAsRead, delete)
 }
 
+// GenerateCommand will find all emails in the email folder matching the IMAP command and pass them along to the responses channel.
+func GenerateCommand(info MailboxInfo, IMAPCommand string, markAsRead, delete bool) (chan Response, error) {
+	return generateMail(info, IMAPCommand, nil, markAsRead, delete)
+}
+
+// GetCommand will pull all emails that match the provided IMAP Command.
+// Examples of IMAP Commands include TO/FROM/BCC, some examples are here http://www.marshallsoft.com/ImapSearch.htm
+func GetCommand(info MailboxInfo, IMAPCommand string, markAsRead, delete bool) ([]Email, error) {
+	responses, err := GenerateCommand(info, IMAPCommand, markAsRead, delete)
+	return responseToList(responses, err)
+}
+
 // GetUnread will find all unread emails in the folder and return them as a list.
 func GetUnread(info MailboxInfo, markAsRead, delete bool) ([]Email, error) {
+	responses, err := GenerateUnread(info, markAsRead, delete)
+	return responseToList(responses, err)
+}
+
+func responseToList(responses chan Response, err error) ([]Email, error) {
 	// call chan, put 'em in a list, return
 	var emails []Email
-
-	responses, err := GenerateUnread(info, markAsRead, delete)
 	if err != nil {
 		return emails, err
 	}
@@ -73,7 +88,6 @@ func GetUnread(info MailboxInfo, markAsRead, delete bool) ([]Email, error) {
 		}
 		emails = append(emails, resp.Email)
 	}
-
 	return emails, nil
 }
 
