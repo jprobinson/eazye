@@ -49,7 +49,7 @@ func GetSince(info MailboxInfo, since time.Time, markAsRead, delete bool)
 func GenerateSince(info MailboxInfo, since time.Time, markAsRead, delete bool) (chan Response, error)
 ```
 
-##### ... or all mail matching an IMAP search
+##### ... or all mail matching an IMAP Command search
 
 ```go
 // GetCommand will pull all emails that match the provided IMAP Command.
