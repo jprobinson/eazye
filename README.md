@@ -52,7 +52,8 @@ func GenerateSince(info MailboxInfo, since time.Time, markAsRead, delete bool) (
 ##### ... or all mail matching an IMAP search
 
 ```go
-// GetCommand will pull all emails that have an internal date after the given time.
+// GetCommand will pull all emails that match the provided IMAP Command.
+// Examples of IMAP Commands include TO/FROM/BCC, some examples are here http://www.marshallsoft.com/ImapSearch.htm
 func GetCommand(info MailboxInfo, IMAPCommand string, markAsRead, delete bool)
 ```
 
