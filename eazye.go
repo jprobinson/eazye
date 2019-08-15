@@ -62,7 +62,8 @@ func GenerateCommand(info MailboxInfo, IMAPCommand string, markAsRead, delete bo
 	return generateMail(info, IMAPCommand, nil, markAsRead, delete)
 }
 
-// GetCommand will find all emails in the folder matching the IMAP command and return them as a list.
+// GetCommand will pull all emails that match the provided IMAP Command.
+// Examples of IMAP Commands include TO/FROM/BCC, some examples are here http://www.marshallsoft.com/ImapSearch.htm
 func GetCommand(info MailboxInfo, IMAPCommand string, markAsRead, delete bool) ([]Email, error) {
 	responses, err := GenerateCommand(info, IMAPCommand, markAsRead, delete)
 	return emailToList(responses, err)
