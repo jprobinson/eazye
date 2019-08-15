@@ -66,16 +66,16 @@ func GenerateCommand(info MailboxInfo, IMAPCommand string, markAsRead, delete bo
 // Examples of IMAP Commands include TO/FROM/BCC, some examples are here http://www.marshallsoft.com/ImapSearch.htm
 func GetCommand(info MailboxInfo, IMAPCommand string, markAsRead, delete bool) ([]Email, error) {
 	responses, err := GenerateCommand(info, IMAPCommand, markAsRead, delete)
-	return emailToList(responses, err)
+	return responseToList(responses, err)
 }
 
 // GetUnread will find all unread emails in the folder and return them as a list.
 func GetUnread(info MailboxInfo, markAsRead, delete bool) ([]Email, error) {
 	responses, err := GenerateUnread(info, markAsRead, delete)
-	return emailToList(responses, err)
+	return responseToList(responses, err)
 }
 
-func emailToList(responses chan Response, err error) ([]Email, error) {
+func responseToList(responses chan Response, err error) ([]Email, error) {
 	// call chan, put 'em in a list, return
 	var emails []Email
 	if err != nil {
