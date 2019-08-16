@@ -148,6 +148,12 @@ func DeleteEmails(info MailboxInfo, uids []uint32) error {
 
 }
 
+// ValidateSettings attempts to login to the supplied IMAP account to ensure the info is correct
+func ValidateSettings(info MailboxInfo) error {
+	_, err := newIMAPClient(info)
+	return err
+}
+
 // Email is a simplified email struct containing the basic pieces of an email. If you want more info,
 // it should all be available within the Message attribute.
 type Email struct {
