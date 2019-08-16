@@ -150,7 +150,11 @@ func DeleteEmails(info MailboxInfo, uids []uint32) error {
 
 // ValidateSettings attempts to login to the supplied IMAP account to ensure the info is correct
 func ValidateSettings(info MailboxInfo) error {
-	_, err := newIMAPClient(info)
+	client, err := newIMAPClient(info)
+	defer func() {
+		client.Close(true)
+		client.Logout(30 * time.Second)
+	}()
 	return err
 }
 
