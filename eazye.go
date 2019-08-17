@@ -162,6 +162,16 @@ func DeleteEmails(info MailboxInfo, uids []uint32) error {
 
 }
 
+// ValidateMailboxInfo attempts to login to the supplied IMAP account to ensure the info is correct
+func ValidateMailboxInfo(info MailboxInfo) error {
+	client, err := newIMAPClient(info)
+	defer func() {
+		client.Close(true)
+		client.Logout(30 * time.Second)
+	}()
+	return err
+}
+
 // Email is a simplified email struct containing the basic pieces of an email. If you want more info,
 // it should all be available within the Message attribute.
 type Email struct {
