@@ -24,11 +24,12 @@ import (
 // MailboxInfo holds onto the credentials and other information
 // needed for connecting to an IMAP server.
 type MailboxInfo struct {
-	Host   string
-	TLS    bool
-	User   string
-	Pwd    string
-	Folder string
+	Host               string
+	TLS                bool
+	InsecureSkipVerify bool
+	User               string
+	Pwd                string
+	Folder             string
 	// Read only mode, false (original logic) if not initialized
 	ReadOnly bool
 }
@@ -293,7 +294,9 @@ func newIMAPClient(info MailboxInfo) (*imap.Client, error) {
 	var client *imap.Client
 	var err error
 	if info.TLS {
-		client, err = imap.DialTLS(info.Host, new(tls.Config))
+		config := new(tls.Config)
+		config.InsecureSkipVerify = info.InsecureSkipVerify
+		client, err = imap.DialTLS(info.Host, config)
 		if err != nil {
 			return client, err
 		}
