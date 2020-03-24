@@ -178,7 +178,7 @@ func ValidateMailboxInfo(info MailboxInfo) error {
 type Email struct {
 	Message *mail.Message
 
-	From         *mail.Address   `json:"from"`
+	From         string          `json:"from"`
 	To           []*mail.Address `json:"to"`
 	InternalDate time.Time       `json:"internal_date"`
 	Precedence   string          `json:"precedence"`
@@ -491,9 +491,18 @@ func NewEmail(msgFields imap.FieldMap) (Email, error) {
 		return email, fmt.Errorf("unable to read header: %s", err)
 	}
 
-	from, err := mail.ParseAddress(msg.Header.Get("From"))
-	if err != nil {
-		return email, fmt.Errorf("unable to parse from address: %s", err)
+	rawFrom := msg.Header.Get("From")
+	rawFromSl := strings.Fields(rawFrom)
+	from := ""
+	for _, rF := range rawFromSl {
+		f, err := mail.ParseAddress(rF)
+		if err != nil {
+			continue
+		}
+		from = f.Address
+	}
+	if len(from) == 0 {
+		from = rawFrom
 	}
 
 	to, err := mail.ParseAddressList(msg.Header.Get("To"))
